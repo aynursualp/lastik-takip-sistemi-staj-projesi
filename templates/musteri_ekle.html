@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Yeni Müşteri Ekle{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card-shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Yeni Müşteri Kaydı</h4>
+            </div>
+
+            <div class="card-body">
+                <form action="/yeni-musteri" method="POST">
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">İsim</label>
+                        <input type="text" name="isim" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Soyisim</label>
+                        <input type="text" name="soyisim" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">E-mail</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">Telefon Numarası</label>
+                        <input type="text" name="telefon" class="form-control" placeholder="05XX XXX XX XX" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 mb-2">Kaydet</button>
+                    <a href="/" class="btn btn-outline-secondary w-100">İptal ve Geri Dön</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

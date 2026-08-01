@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lastik Takip Sistemi{% endblock %}</title>
+     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+     <style>
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+            padding-top: 1rem;
+            z-index: 1040;
+            transition: transform 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 240px;
+            padding: 2rem;
+        }
+
+        .sidebar .nav-link {
+            color: inherit;
+            border-radius: 8px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 1035;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%);}
+            .sidebar.show { transform: translateX(0);}
+            .sidebar-overlay.show { display: block;}
+            .main-content { margin-left: 0;}
+        }
+     </style>
+     {% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-body-tertiary">
+    <button class="btn btn-primary d-md-none m-2" id="menuToggleBtn">
+        ☰ Menü
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <nav class="sidebar bg-body shadow-sm border-end d-flex flex-column" id="sidebarNav">
+        <h4 class="text-center fw-bold text-primary mb-4">🛞 Lastik Takip</h4>
+
+        <ul class="nav nav-pills flex-column px-3 flex-grow-1">
+            <li class="nav-item mb-1">
+                <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">🏠 Ana Sayfa</a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link {% if request.path =='/yeni-musteri' %}active{% endif %}" href="/yeni-musteri">👤 Yeni Müşteri</a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link {% if request.path == '/yeni-arac' %}active{% endif %}" href="/yeni-arac">🚗 Yeni Araç</a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link {% if request.path == '/yeni-islem' %}active{% endif %}" href="/yeni-islem">🛠️ Yeni İşlem</a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link" href="/musteri-export">📊 Excel'e Aktar</a>
+            </li>
+            <li class="nav-item mb-1">
+                <a class="nav-link" href="#" onclick="modelGuncelleOnay(event)">🔄 Modeli Güncelle</a>
+            </li>
+        </ul>
+
+        <div class="px-3 pb-3">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="karanlikModSwitch">
+                <label class="form-check-label" for="karanlikModSwitch">🌙 Karanlık Mod</label>
+            </div>
+            <a href="/logout" class="btn btn-danger w-100 fw-bold">🚪 Çıkış Yap</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <script>
+        const flashMesajlari = {{ messages | tojson | safe }};
+        document.addEventListener('DOMContentLoaded', () => {
+            flashMesajlari.forEach(([kategori, mesaj]) => {
+                const ikonEslesme = {
+                    'success': 'success',
+                    'danger': 'error',
+                    'warning': 'warning',
+                    'info': 'info'
+                };
+                Swal.fire({
+                    icon: ikonEslesme[kategori] || 'info',
+                    title: mesaj,
+                    confirmButtonColor: '#0d6efd',
+                    confirmButtonText: 'Tamam'
+                });
+            });
+        });
+    </script>
+    {% endif %}
+{% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const kayitliTema = localStorage.getItem('tema') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', kayitliTema);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const switchEl = document.getElementById('karanlikModSwitch');
+            switchEl.checked = (kayitliTema === 'dark');
+            switchEl.addEventListener('change', () => {
+                const yeniTema = switchEl.checked ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-bs-theme', yeniTema);
+                localStorage.setItem('tema', yeniTema)
+            });
+        });
+    </script>
+
+    <script>
+        const sidebar = document.getElementById('sidebarNav');
+        const overlay = document.getElementById('sidebarOverlay');
+        const toggleBtn = document.getElementById('menuToggleBtn');
+
+        function sidebarAcKapa() {
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show')
+        }
+
+        toggleBtn.addEventListener('click', sidebarAcKapa);
+        overlay.addEventListener('click', sidebarAcKapa);
+    </script>
+
+    <script>
+        function modelGuncelleOnay(event) {
+            event.preventDefault();
+            Swal.fire({
+                title: 'Emin misiniz?',
+                text: 'Model, veritabanındaki güncel verilerle yeniden eğitilecek.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0dcaf0',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Evet, Güncelle',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/model-yeniden-egit';
+                }
+            });
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

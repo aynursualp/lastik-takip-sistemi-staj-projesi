@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}İşlem Düzenle{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card-shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">İşlemleri Düzenle</h4>
+            </div>
+
+            <div class="card-body">
+                <form action="/islem-duzenle/{{ islem[0] }}" method="POST">
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Araç Seçin</label>
+                        <select name="arac_id" class="form-control" required>
+                            <option value="">-- Lütfen bir araç seçin --</option>
+                            {% for arac in arac_listesi %}
+                                <option value="{{ arac[0] }}" {% if arac[0] == islem[1] %}selected{% endif %}>
+                                    {{ arac[3] }} - {{ arac[1] }} {{ arac[2] }}
+                                </option>
+                            {% endfor %}
+                        </select> 
+
+                        <div class="text-end mt-1">
+                            <a href="/yeni-arac" class="text-decoration-none small text-warning">+ Yeni Araç Ekle</a>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">İşlem Tarihi</label>
+                        <input type="date" name="islem_tarihi" class="form-control" value="{{ islem[2] }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Kilometre</label>
+                        <input type="number" name="kilometre" class="form-control" value="{{ islem[3] }}" min="0" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">Lastik Tipi</label>
+                        <select name="lastik_tipi" class="form-control" required>
+                            <option value="">-- Lütfen bir tip seçin --</option>
+                            <option value="YAZ" {% if islem[4] == 'YAZ' %}selected{% endif %}>☀️ Yaz</option>
+                            <option value="KIS" {% if islem[4] == 'KIS' %}selected{% endif %}>❄️ Kış</option>
+                            <option value="4 MEVSIM" {% if islem[4] == '4 MEVSIM' %}selected{% endif %}>🍂 4 Mevsim</option>"
+                        </select>
+                    </div>
+
+
+                    <button type="submit" class="btn btn-warning w-100 mb-2">İşlemi Kaydet</button>
+                    <a href="/" class="btn btn-outline-secondary w-100">İptal ve Geri Dön</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

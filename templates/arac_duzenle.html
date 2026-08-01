@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Araç Düzenle{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+
+        <div class="card-shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Araç Bilgilerini Güncelle</h4>
+            </div>
+
+            <div class="card-body">
+                <form action="/arac-duzenle/{{ arac[0] }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Müşteri Seçin</label>
+                        <select name="musteri_id" class="form-control" required>
+                            <option value="">-- Lütfen bir müşteri seçin --</option>
+                            {% for musteri in musteri_listesi %}
+                                <option value="{{ musteri[0] }}" {% if musteri[0] == arac[4] %}selected{% endif %}>
+                                    {{ musteri[1] }} {{ musteri[2] }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <div class="text-end mt-1">
+                            <a href="/yeni-musteri" class="text-decoration-none small text-success">+ Yeni  Müşteri Ekle</a>
+                        </div>
+                    </div>
+
+                    
+                    
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Marka</label>
+                        <input type="text" name="marka" class="form-control" value="{{ arac[1] }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted fw-bold">Model</label>
+                        <input type="text" name="model" class="form-control" value="{{ arac[2] }}" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-bold">Plaka</label>
+                        <input type="text" name="plaka" class="form-control" value="{{ arac[3] }}" required> 
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 mb-2">Aracı Kaydet</button>
+                    <a href="/" class="btn btn-outline-secondary w-100">İptal ve Geri Dön</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

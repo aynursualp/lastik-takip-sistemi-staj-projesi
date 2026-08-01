@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Hata {{ kod }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 text-center">
+        <h1 class="display-1 text-muted">{{ kod }}</h1>
+        <h3 class="text-secondary mb-3">{{ mesaj }}</h3>
+        <p class="text-muted mb-4">Aradığınız sayfa taşınmış, silinmiş veya hiç var olmamış olabilir.</p>
+        <a href="/" class="btn btn-primary px-4">🏠 Ana Sayfaya Dön</a>
+    </div>
+</div>
+{% endblock %}

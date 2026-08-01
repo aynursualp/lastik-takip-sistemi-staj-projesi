@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center" style="height: 100vh;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for kategori, mesaj in messages %}
+                            <div class="alert alert-{{ kategori }} alert-dismissible fade show shadow shadow-sm" role="alert">
+                                <strong>Uyarı:</strong> {{ mesaj }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card shadow border-0">
+                    <div class="card-body p-4">
+                        <h4 class="text-center mb-4 fw-bold text-primary">Sisteme Giriş</h4>
+
+                        <form action="/login" method="POST">
+                            <div class="mb-3">
+                                <label class="form-label text-secondary fw-bold">Kullanıcı Adı</label>
+                                <input type="text" name="kullanici_adi" class="form-control" required autofocus>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label text-secondary fw-bold">Şifre</label>
+                                <input type="password" name="sifre" class="form-control" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold fs-5">Giriş Yap</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

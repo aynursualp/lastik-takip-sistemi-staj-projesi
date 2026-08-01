@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Ana Sayfa{% endblock %}
+
+{% block content %}
+        
+<h1 class="mb-4 text-center">Lastik Takip Sistemi</h1>
+
+{% if current_page == 1 %}
+
+    <div class="row text-center mb-5">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-primary text-white shadow h-100 border-0">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title">👥 Toplam Müşteri</h5>
+                    <h2 class="display-4 fw-bold mb-0">{{ toplam_musteri }}</h2>
+                </div>
+            </div>
+        </div>
+                
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white shadow h-100 border-0">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title">🚗 Sistemdeki Araç</h5>
+                    <h2 class="display-4 fw-bold mb-0">{{ toplam_arac }}</h2>
+                </div>
+            </div>
+        </div>
+                
+        <div class="col-md-4 mb-3">
+            <div class="card bg-warning text-dark shadow h-100 border-0">
+                <div class="card-body d-flex flex-column justify-content-center">
+                    <h5 class="card-title">🛠️ Yapılan İşlem</h5>
+                    <h2 class="display-4 fw-bold mb-0">{{ toplam_islem }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <div id="grafikler" class="row mb-5">
+        {% if lastik_oranlari %}
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body text-center">
+                        <h5 class="fw-bold text-secondary mb-3">📊 Lastik Tipi Dağılımı</h5>
+                        <canvas id="lastikGrafigi" data-liste='{{ lastik_oranlari | tojson | safe }}' style="max-width: 100%;"></canvas>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {%if islem_tarihleri %}
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-secondary mb-3">📈 Aylık İşlem Hacmi</h5>
+
+                            <div class="btn-group shadow-sm" role="group">
+                                <a href="/?filtre=hepsi{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#grafikler" class="btn btn-sm {% if grafik_filtresi == 'hepsi' or not grafik_filtresi %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Tümü</a>
+                                <a href="/?filtre=1yil{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#grafikler" class="btn btn-sm {% if grafik_filtresi == '1yil' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Son 1 Yıl</a>
+                                <a href="/?filtre=6ay{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#grafikler" class="btn btn-sm {% if grafik_filtresi == '6ay' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">Son 6 Ay</a>
+                            </div>
+                        </div>
+
+                        {% if islem_tarihleri %}
+                            <canvas id="islem_tarihi_grafigi" data-liste='{{ islem_tarihleri | tojson | safe }}' style="max-width: 100%;"></canvas>
+                        {% else %}
+                            <div class="alert alert-light text-center text-muted mt-4 p-4 border-0" role="alert">
+                                📭 Seçilen tarih aralığında işlem kaydı bulunmamaktadır.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if uyari_listesi %}
+        <div class="row mb-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0 border-start border-danger border-4">
+                    <div class="card-body">
+                        <h5 class="fw-bold text-danger mb-3">⚠️ Lastik Değişimi Yaklaşan Araçlar</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Müşteri</th>
+                                        <th>Araç</th>
+                                        <th>Plaka</th>
+                                        <th>Durum</th>
+                                        <th>Detay</th>
+                                        <th>İşlem</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for kayit in uyari_listesi %}
+                                        <tr>
+                                            <td>{{ kayit[0] }} {{ kayit[1] }}</td>
+                                            <td>{{ kayit[3] }}</td>
+                                            <td><span class="badge bg-secondary">{{ kayit[4] }}</span></td>
+                                            <td>
+                                                {% if kayit[9] == 'kritik' %}
+                                                    <span class="badge bg-danger">🔴 Kritik</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">🟠 Yaklaşıyor</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-muted small">
+                                            {% if kayit[10] == 'zaman' %}
+                                                {% if kayit[9] == 'kritik' %}
+                                                    ⏰ Değişim zamanı geçti (kendi ortalamasına göre)
+                                                {% else %}
+                                                    ⏰ Değişim zamanı yaklaşıyor (kendi ortalamasına göre)
+                                                {% endif %}
+                                            {% else %}
+                                                📏 Tahmini {{ kayit[8] }} KM kaldı
+                                            {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="/uyari-gonder/{{ kayit[6] }}" class="btn btn-sm btn-primary shadow-sm fw-bold">✉️ Mail Gönder</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if model_bilgisi %}
+    <div class="alert alert-light border shadow-sm text-center small mb-4" role="alert">
+        🤖 Tahmin Modeli — Ortalama Hata Payı: <strong>±{{ model_bilgisi.mae }} KM</strong>
+        | Eğitim Tarihi: {{ model_bilgisi.egitim_tarihi }}
+        | Veri Sayısı: {{ model_bilgisi.veri_sayisi }} kayıt
+    </div>
+    {% endif %}
+{% endif %}
+
+<div id="liste" class="row justify-content-center mb-4">
+    <div class="col-md-8">
+        <form action="/#liste" method="GET" class="shadow-sm">
+            <div class="input-group input-group-lg">
+                <input type="text" name="arama_kelimesi" class="form-control border-primary" 
+                    placeholder="Müşteri adı, plaka veya araç markası ara..."
+                    value="{{ arama_kelimesi or '' }}">
+                <button type="submit" class="btn btn-primary px-4">🔍 Ara</button>
+            </div>
+
+            <div class="d-flex justify-content-end mt-2">
+                <select name="sirala" class="form-select form-select-sm w-auto" onchange="this.form.submit()">
+                    <option value="eski" {% if sirala == 'eski' %}selected{% endif %}>Eski Eklenenler</option>
+                    <option value="yeni" {% if sirala == 'yeni' %}selected{% endif %}>Yeni Eklenenler</option>
+                    <option value="ad_az" {% if sirala == 'ad_az' %}selected{% endif %}>İsme Göre (A-Z)</option>
+                    <option value="ad_za" {% if sirala == 'ad_za' %}selected{% endif %}>İsme Göre (Z-A)</option>
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+{% if liste %}
+    {% for kayit in liste %}
+    <div class="col-md-6 mb-4"> 
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column justify-content-between">
+                
+                <div>
+                    <h5 class="card-title fw-bold text-primary">{{ kayit[0] }} {{ kayit[1] }}</h5>
+                    <p class="card-text text-muted mb-1">📞 {{ kayit[2] }}</p>
+                    <hr>
+
+                    {% if kayit[6] %} 
+                        <p class="card-text mb-3">
+                            <strong>Araç:</strong> {{ kayit[3] }} <br>
+                            <strong>Plaka:</strong> <span class="badge bg-secondary">{{ kayit[4] }}</span>
+                        </p>
+
+                        {% if kayit[9] == 'kritik' %}
+                            <span class="badge bg-danger mb-2">🔴 Lastik Değişimi Kritik ({{ kayit[8] }} KM kaldı)</span><br>
+                        {% elif kayit[9] == 'yaklasiyor' %}
+                            <span class="badge bg-warning text-dark mb-2">🟠 Yaklaşıyor ({{ kayit[8] }} KM kaldı)</span><br>
+                        {% endif %}
+
+                        {% if kayit[7] %}
+                            <button onclick="aiTahminGoster(event, '{{ kayit[7] }}')" class="btn btn-outline-info btn-sm w-100 mb-3 fw-bold shadow-sm">
+                                🤖 Yapay Zeka Analizi
+                            </button>
+                            {% if kayit[10] %}
+                                <p class="text-muted mb-3" style="font-size: 0.75rem;">
+                                    ⚠️ Bu tahmin sınırlı veriyle (3'ten az kayıt) üretildi, güvenilirliği düşük olabilir.
+                                </p>
+                                {% endif %}
+                        {% else %}
+                            <div class="alert alert-secondary py-2 mb-3 shadow-sm text-muted" role="alert" style="font-size: 0.85rem;">
+                                ⏳ Tahmin için işlem geçmişi bekleniyor...
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2 mb-3">
+                            <a href="/islem-gecmisi/{{ kayit[6] }}" class="btn btn-warning btn-sm fw-bold">
+                                🛠️ İşlem Geçmişini Gör
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-danger my-3 fw-bold">⚠️ Kayıtlı Araç Yok</p>
+                    {% endif %}
+                </div>
+
+                <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mt-3">
+                    
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/musteri-duzenle/{{ kayit[5] }}" class="btn btn-outline-primary btn-sm">Müşteri Düzenle</a>
+                        <a href="#" class="btn btn-outline-danger btn-sm" onclick="silmeOnayi(event, '/musteri-sil/{{ kayit[5] }}', 'Müşteriyi silerseniz, ona ait tüm araçlar ve işlemler de silinir.')">Sil</a>
+                    </div>
+                                                                
+                    {% if kayit[6] %}
+                        <div class="d-flex gap-2">
+                            <a href="/arac-duzenle/{{ kayit[6] }}" class="btn btn-outline-success btn-sm">Araç Düzenle</a>
+                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="silmeOnayi(event, '/arac-sil/{{ kayit[6] }}', 'Bu aracı silerseniz, bu araca ait tüm işlemler de silinecek.')">Araç Sil</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+{% else %}
+    <div class="col-12 text-center mt-5 mb-5">
+        <h1 class="display-1 text-muted">📭</h1>
+        {% if arama_kelimesi %}
+            <h3 class="text-secondary my-3">"{{ arama_kelimesi }}" ile eşleşen bir kayıt bulunamadı.</h3>
+            <p class="text-muted">Farklı bir arama terimi deneyebilir veya <a href="/">tüm listeye</a> dönebilirsiniz.</p>
+        {% else %}
+            <h3 class="text-secondary my-3">Sistemde henüz hiç kayıt yok.</h3>
+            <p class="text-muted">Sol üstteki menüden ilk müşterinizi ekleyebilirsiniz.</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if total_pages > 1 %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {%if current_page == 1 %}disabled{% endif %}">
+            <a class="page-link" href="/?page={{ current_page - 1 }}{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#liste">⬅️ Önceki</a>
+        </li>
+        
+        {% for i in range(1, total_pages + 1) %}
+        <li class="page-item {%if current_page == i %}active{% endif %}">
+            <a class="page-link" href="/?page={{ i }}{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#liste">{{ i }}</a>
+        </li>
+        {% endfor %}
+
+        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+            <a class="page-link" href="/?page={{ current_page + 1 }}{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#liste">Sonraki ➡️</a>
+    
+        </li>
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+
+<script>    
+const canvasPasta = document.getElementById('lastikGrafigi');
+if (canvasPasta) {
+    const hamLastikVeri = JSON.parse(canvasPasta.dataset.liste);
+
+    const lastikEtiketleri = hamLastikVeri.map(eleman => eleman[0])
+    const lastikSayilari = hamLastikVeri.map(eleman => eleman[1]);
+
+    new Chart(canvasPasta, {
+        type: 'pie',
+        data: {
+            labels: lastikEtiketleri,
+            datasets: [{
+                label: 'İşlem Sayısı',
+                data: lastikSayilari,
+                backgroundColor: [
+                    '#36a2eb',
+                    '#ffcd56',
+                    '#ff6384',
+                    '#4bc0c0'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+}
+
+const canvasCizgi = document.getElementById('islem_tarihi_grafigi');
+if(canvasCizgi) {
+const hamTarihVeri = JSON.parse(canvasCizgi.dataset.liste);
+
+const tarihEtiketleri = hamTarihVeri.map(eleman => eleman[0]);
+const tarihSayilari = hamTarihVeri.map(eleman => eleman[1]);
+
+new Chart(canvasCizgi, {
+    type: 'line',
+    data: {
+        labels: tarihEtiketleri,
+        datasets: [{
+            label: 'Aylık Yapılan Servis İşlemi',
+            data: tarihSayilari,
+            borderColor: '#198754',
+            backgroundColor: 'rgba(25, 135, 84, 0.2)',
+            borderWidth: 3,
+            tension: 0.3,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' }},
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }}}
+    }
+});
+}
+</script>
+
+<script>
+function silmeOnayi(event, url, mesaj) {
+    event.preventDefault();
+
+    Swal.fire({
+        title: 'Emin misiniz?',
+        text: mesaj,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Evet, Sil!',
+        cancelButtonText: 'İptal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = url;
+        }
+    });
+}
+
+function aiTahminGoster(event, tahminiKm) {
+    event.preventDefault();
+    Swal.fire({
+        title: '🤖 Yapay Zeka Analizi',
+        html: `Aracın işlem geçmişine göre bir sonraki lastik değişimi ortalama <b>${tahminiKm} KM</b>'de yapılmalıdır.`,
+        icon: 'info',
+        confirmButtonColor: '#0dcaf0',
+        confirmButtonText: 'Anladım'
+    });
+}
+</script>
+{% endblock %}

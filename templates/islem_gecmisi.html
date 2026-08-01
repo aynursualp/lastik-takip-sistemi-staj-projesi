@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}İşlem Geçmişi{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body bg-dark text-white rounded">
+                <h3 class="mb-2">🛠️ Araç İşlem Geçmişi</h3>
+                <p class="mb-0 text-white-50">
+                    <strong>Müşteri:</strong>  {{ arac[3] }} {{ arac[4] }} |
+                    <strong>Araç:</strong> {{ arac[0] }} {{ arac[1] }} |
+                    <strong>Plaka:</strong> <span class="badge bg-warning text-dark">{{ arac[2] }}</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <a href="/yeni-islem?secili_arac={{ arac_id }}" class="btn btn-success fw-bold">
+                ➕ Bu Araca Yeni İşlem Ekle
+            </a>
+            <a href="/islem-export/{{ arac_id }}" class="btn btn-outline-success fw-bold">
+                📊 Excel'e Aktar
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                {% if islemler %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>İşlem Tarihi</th>
+                                    <th>Kilometre</th>
+                                    <th>Lastik Tipi</th>
+                                    <th class="text-end">İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for islem in islemler %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ islem.tarih }}</strong> <br>
+                                            <small class="text-muted">{{ islem.zaman_mesaji }}</small>
+                                        </td>
+                                        <td>
+                                            {{ islem.km }} KM <br>
+                                            {% if islem.fark_km > 0 %}
+                                                <small class="text-success">+{{ islem.fark_km }} KM yapılmış</small>
+                                            {% else  %}
+                                                <small class="text-muted">İlk Kayıt</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info text-dark">{{ islem.tip }}</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a href="/islem-duzenle/{{ islem.id }}" class="btn btn-sm btn-outline-warning me-1">Düzenle</a>
+                                            <a href="/islem-sil/{{ islem.id }}" class="btn btn-sm btn-outline-danger">Sil</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted mb-0">⚠️ Bu araca ait henüz kayıtlı bir işlem geçmişi bulunmamaktadır.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="/" class="btn btn-secondary px-4">⬅️ Ana Sayfaya Dön</a>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
