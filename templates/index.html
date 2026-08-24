@@ -101,7 +101,7 @@
                                         <tr>
                                             <td>{{ kayit[0] }} {{ kayit[1] }}</td>
                                             <td>{{ kayit[3] }}</td>
-                                            <td><span class="badge bg-secondary">{{ kayit[4] }}</span></td>
+                                            <td><span class="badge text-bg-secondary">{{ kayit[4] }}</span></td>
                                             <td>
                                                 {% if kayit[9] == 'kritik' %}
                                                     <span class="badge bg-danger">🔴 Kritik</span>
@@ -165,73 +165,75 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row align-items-start">
 {% if liste %}
-    {% for kayit in liste %}
+    {% for musteri in liste %}
     <div class="col-md-6 mb-4"> 
-        <div class="card shadow-sm h-100">
-            <div class="card-body d-flex flex-column justify-content-between">
+        <div class="card shadow-sm">
+            <div class="card-body d-flex flex-column">
                 
                 <div>
-                    <h5 class="card-title fw-bold text-primary">{{ kayit[0] }} {{ kayit[1] }}</h5>
-                    <p class="card-text text-muted mb-1">📞 {{ kayit[2] }}</p>
+                    <h5 class="card-title fw-bold text-primary">{{ musteri.ad }} {{ musteri.soyad }}</h5>
+                    <p class="card-text text-muted mb-1">📞 {{ musteri.telefon }}</p>
                     <hr>
 
-                    {% if kayit[6] %} 
-                        <p class="card-text mb-3">
-                            <strong>Araç:</strong> {{ kayit[3] }} <br>
-                            <strong>Plaka:</strong> <span class="badge bg-secondary">{{ kayit[4] }}</span>
-                        </p>
-
-                        {% if kayit[9] == 'kritik' %}
-                            <span class="badge bg-danger mb-2">🔴 Lastik Değişimi Kritik ({{ kayit[8] }} KM kaldı)</span><br>
-                        {% elif kayit[9] == 'yaklasiyor' %}
-                            <span class="badge bg-warning text-dark mb-2">🟠 Yaklaşıyor ({{ kayit[8] }} KM kaldı)</span><br>
-                        {% endif %}
-
-                        {% if kayit[7] %}
-                            <button onclick="aiTahminGoster(event, '{{ kayit[7] }}')" class="btn btn-outline-info btn-sm w-100 mb-3 fw-bold shadow-sm">
-                                🤖 Yapay Zeka Analizi
-                            </button>
-                            {% if kayit[10] %}
-                                <p class="text-muted mb-3" style="font-size: 0.75rem;">
-                                    ⚠️ Bu tahmin sınırlı veriyle (3'ten az kayıt) üretildi, güvenilirliği düşük olabilir.
+                    {% if musteri.araclar %}
+                        {% for arac in musteri.araclar %}
+                            <div class="border rounded p-3 mb-3 bg-body-secondary"> <!-- Her aracı ayırmak için kutu -->
+                                <p class="card-text mb-2">
+                                    <strong>Araç:</strong> {{ arac.marka }} <br>
+                                    <strong>Plaka:</strong> <span class="badge text-bg-secondary">{{ arac.plaka }}</span>
                                 </p>
-                                {% endif %}
-                        {% else %}
-                            <div class="alert alert-secondary py-2 mb-3 shadow-sm text-muted" role="alert" style="font-size: 0.85rem;">
-                                ⏳ Tahmin için işlem geçmişi bekleniyor...
-                            </div>
+
+                        {% if arac.durum == 'kritik' %}
+                            <span class="badge bg-danger mb-2">🔴 Lastik Değişimi Kritik ({{ arac.kalan_km }} KM kaldı)</span><br>
+                        {% elif arac.durum == 'yaklasiyor' %}
+                            <span class="badge bg-warning text-dark mb-2">🟠 Yaklaşıyor ({{ arac.kalan_km }} KM kaldı)</span><br>
                         {% endif %}
 
-                        <div class="d-grid gap-2 mb-3">
-                            <a href="/islem-gecmisi/{{ kayit[6] }}" class="btn btn-warning btn-sm fw-bold">
-                                🛠️ İşlem Geçmişini Gör
-                            </a>
-                        </div>
+                        {% if arac.tahmini_km %}
+                                    <button onclick="aiTahminGoster(event, '{{ arac.tahmini_km }}')" class="btn btn-outline-info btn-sm w-100 mb-2 fw-bold shadow-sm">
+                                        🤖 Yapay Zeka Analizi
+                                    </button>
+                                    {% if arac.dusuk_guven %}
+                                        <p class="text-muted mb-2" style="font-size: 0.75rem;">
+                                            ⚠️ Bu tahmin sınırlı veriyle üretildi, güvenilirliği düşük olabilir.
+                                        </p>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="alert alert-secondary py-1 mb-2 shadow-sm text-muted text-center" role="alert" style="font-size: 0.85rem;">
+                                        ⏳ Tahmin için işlem geçmişi bekleniyor...
+                                    </div>
+                                {% endif %}
+                                
+                                 
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    <a href="/islem-gecmisi/{{ arac.arac_id }}" class="btn btn-warning btn-sm fw-bold flex-grow-1">
+                                        🛠️ İşlem Geçmişi
+                                    </a>
+                                    <a href="/arac-duzenle/{{ arac.arac_id }}" class="btn btn-outline-success btn-sm">Düzenle</a>
+                                    <a href="#" class="btn btn-outline-danger btn-sm" onclick="silmeOnayi(event, '/arac-sil/{{ arac.arac_id }}', 'Bu aracı silerseniz, bu araca ait tüm işlemler de silinecek.')">Sil</a>
+                                
+                                </div>
+                            </div>
+                        {% endfor %}
                     {% else %}
                         <p class="text-danger my-3 fw-bold">⚠️ Kayıtlı Araç Yok</p>
                     {% endif %}
                 </div>
 
-                <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mt-3">
-                    
-                    <div class="d-flex gap-2 flex-wrap">
-                        <a href="/musteri-duzenle/{{ kayit[5] }}" class="btn btn-outline-primary btn-sm">Müşteri Düzenle</a>
-                        <a href="#" class="btn btn-outline-danger btn-sm" onclick="silmeOnayi(event, '/musteri-sil/{{ kayit[5] }}', 'Müşteriyi silerseniz, ona ait tüm araçlar ve işlemler de silinir.')">Sil</a>
+                <!-- Müşteri Aksiyon Butonları (Kartın En Altı) -->
+                <div class="d-flex flex-column flex-md-row justify-content-between gap-2 mt-3 pt-3 border-top">
+                    <div class="d-flex gap-2 w-100">
+                        <a href="/musteri-duzenle/{{ musteri.musteri_id }}" class="btn btn-primary btn-sm flex-grow-1">Müşteri Düzenle</a>
+                        <a href="#" class="btn btn-danger btn-sm flex-grow-1" onclick="silmeOnayi(event, '/musteri-sil/{{ musteri.musteri_id }}', 'Müşteriyi silerseniz, ona ait tüm araçlar ve işlemler de silinir.')">Müşteriyi Sil</a>
                     </div>
-                                                                
-                    {% if kayit[6] %}
-                        <div class="d-flex gap-2">
-                            <a href="/arac-duzenle/{{ kayit[6] }}" class="btn btn-outline-success btn-sm">Araç Düzenle</a>
-                            <a href="#" class="btn btn-outline-danger btn-sm" onclick="silmeOnayi(event, '/arac-sil/{{ kayit[6] }}', 'Bu aracı silerseniz, bu araca ait tüm işlemler de silinecek.')">Araç Sil</a>
-                        </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    {% endfor %}
+{% endfor %}
+                        
 
 {% else %}
     <div class="col-12 text-center mt-5 mb-5">
