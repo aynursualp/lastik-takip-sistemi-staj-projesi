@@ -10,6 +10,7 @@ import re
 from flask import send_file
 import io
 import json
+from openpyxl.utils import get_column_letter
 from werkzeug.security import generate_password_hash, check_password_hash
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
@@ -165,24 +166,70 @@ def ana_sayfa():
                   LIMIT ? OFFSET ?''', (sayfa_basina_kayit, offset_degeri)
                   )
 
-    birlesik_liste = c.fetchall()
+    # ADIM 1: Bu sayfada hangi müşteriler olacak, önce SADECE müşteri ID'lerini belirle
+    if gelen_arama:
+        aranan_sart = f"%{gelen_arama}%"
+        c.execute(f'''
+                  SELECT DISTINCT Musteriler.musteri_id
+                  FROM Musteriler
+                  LEFT JOIN Araclar ON Musteriler.musteri_id = Araclar.musteri_id
+                  WHERE Musteriler.ad LIKE ? OR Araclar.plaka LIKE ? OR Araclar.marka LIKE ?
+                  ORDER BY {siralama_sql}
+                  LIMIT ? OFFSET ?''', (aranan_sart, aranan_sart, aranan_sart, sayfa_basina_kayit, offset_degeri))
+    else:
+        c.execute(f'''
+                  SELECT DISTINCT Musteriler.musteri_id
+                  FROM Musteriler
+                  LEFT JOIN Araclar ON Musteriler.musteri_id = Araclar.musteri_id
+                  ORDER BY {siralama_sql}
+                  LIMIT ? OFFSET ?''', (sayfa_basina_kayit, offset_degeri))
 
-    zenginlestirilmis_liste = []
-    for kayit in birlesik_liste:
-        kayit_listesi = list(kayit)
-        arac_id = kayit[6]
-        tahmini_km, kalan_km, durum, dusuk_guven, sebep = (None, None, None, False, None)
-        
-        if arac_id:
-            tahmini_km, kalan_km, durum, dusuk_guven, sebep = arac_durumu_hesapla(c, arac_id, model)
-        
-        kayit_listesi.append(tahmini_km)
-        kayit_listesi.append(kalan_km)
-        kayit_listesi.append(durum)
-        kayit_listesi.append(dusuk_guven)
-        kayit_listesi.append(sebep)
-        zenginlestirilmis_liste.append(kayit_listesi)
+    sayfa_musteri_idleri = [r[0] for r in c.fetchall()]
 
+    # ADIM 2: Sadece bu müşterilerin TÜM araçlarını çek (limit yok, hepsi gelsin)
+    gruplu_musteriler = {}
+    if sayfa_musteri_idleri:
+        yer_tutucular = ','.join(['?'] * len(sayfa_musteri_idleri))
+        c.execute(f'''
+                  SELECT
+                    Musteriler.ad,
+                    Musteriler.soyad,
+                    Musteriler.telefon,
+                    Araclar.marka,
+                    Araclar.plaka,
+                    Musteriler.musteri_id,
+                    Araclar.arac_id
+                  FROM Musteriler
+                  LEFT JOIN Araclar ON Musteriler.musteri_id = Araclar.musteri_id
+                  WHERE Musteriler.musteri_id IN ({yer_tutucular})''', sayfa_musteri_idleri)
+        birlesik_liste = c.fetchall()
+
+        for kayit in birlesik_liste:
+            ad, soyad, telefon, marka, plaka, musteri_id, arac_id = kayit
+
+            if musteri_id not in gruplu_musteriler:
+                gruplu_musteriler[musteri_id] = {
+                    'musteri_id': musteri_id,
+                    'ad': ad,
+                    'soyad': soyad,
+                    'telefon': telefon,
+                    'araclar': []
+                }
+
+            if arac_id:
+                tahmini_km, kalan_km, durum, dusuk_guven, sebep = arac_durumu_hesapla(c, arac_id, model)
+                gruplu_musteriler[musteri_id]['araclar'].append({
+                    'arac_id': arac_id,
+                    'marka': marka,
+                    'plaka': plaka,
+                    'tahmini_km': tahmini_km,
+                    'kalan_km': kalan_km,
+                    'durum': durum,
+                    'dusuk_guven': dusuk_guven,
+                    'sebep': sebep
+                })
+
+    zenginlestirilmis_liste = [gruplu_musteriler[mid] for mid in sayfa_musteri_idleri if mid in gruplu_musteriler]
     c.execute('''
               SELECT Musteriler.ad, Musteriler.soyad, Araclar.marka, Araclar.plaka, Araclar.arac_id
               FROM Musteriler
@@ -515,6 +562,7 @@ def arac_duzenle(id):
 
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
+
         c.execute('''UPDATE Araclar 
                   SET musteri_id = ?, marka = ?, model = ?, plaka = ?
                   WHERE arac_id = ?''', (yeni_musteri_id, yeni_marka, yeni_model, yeni_plaka, id))
@@ -575,6 +623,7 @@ def islem_duzenle(id):
 
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
+        
         c.execute('''UPDATE Islemler
                   SET arac_id = ?, islem_tarihi = ?, kilometre = ?, lastik_tipi = ?
                   WHERE islem_id = ?''', (yeni_arac_id, yeni_islem_tarihi, yeni_km, yeni_lastik_tipi, id))
@@ -703,9 +752,34 @@ def musteri_export():
     df = pd.read_sql_query(sorgu, conn)
     conn.close()
 
-    output = io.BytesIO() #ramde geçici buffer açar
+    output = io.BytesIO() # RAM'de geçici buffer
+    
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Müşteriler')
+
+        worksheet = writer.sheets['Müşteriler']
+        
+        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
+        for i, kolon in enumerate(df.columns, start=1): 
+            
+            baslik_uzunlugu = len(str(kolon))
+            
+            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
+            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
+            if not df[kolon].dropna().empty:
+                icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
+            else:
+                icerik_uzunlugu = 0
+                
+            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
+            optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
+            
+            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
+            sutun_harfi = get_column_letter(i)
+            
+            # Genişliği uygula
+            worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
+
     output.seek(0) #imleci başa sarar
 
     dosya_adi = f"musteri_listesi_{datetime.today().strftime('%Y-%m-%d')}.xlsx"
@@ -746,6 +820,35 @@ def islem_export(arac_id):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='İşlem Geçmişi')
+
+        output = io.BytesIO() # RAM'de geçici buffer
+    
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Müşteriler')
+
+        worksheet = writer.sheets['İşlem Geçmişi']
+        
+        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
+        for i, kolon in enumerate(df.columns, start=1): 
+            
+            baslik_uzunlugu = len(str(kolon))
+            
+            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
+            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
+            if not df[kolon].dropna().empty:
+                icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
+            else:
+                icerik_uzunlugu = 0
+                
+            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
+            optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
+            
+            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
+            sutun_harfi = get_column_letter(i)
+            
+            # Genişliği uygula
+            worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
+
     output.seek(0)
 
     if arac_bilgi:
