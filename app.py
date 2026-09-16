@@ -62,7 +62,7 @@ def arac_durumu_hesapla(c, arac_id, model):
         gun_farklari = [(tum_tarihler[i+1] - tum_tarihler[i]).days for i in range(len(tum_tarihler) - 1)]
         ortalama_gun_araligi = sum(gun_farklari) / len(gun_farklari)
 
-    zaman_gecikmis = False
+    zaman_gecikmis = False 
     zaman_yaklasiyor = False
     if ortalama_gun_araligi:
         if gun_farki >= ortalama_gun_araligi:
@@ -166,7 +166,6 @@ def ana_sayfa():
                   LIMIT ? OFFSET ?''', (sayfa_basina_kayit, offset_degeri)
                   )
 
-    # ADIM 1: Bu sayfada hangi müşteriler olacak, önce SADECE müşteri ID'lerini belirle
     if gelen_arama:
         aranan_sart = f"%{gelen_arama}%"
         c.execute(f'''
@@ -186,7 +185,6 @@ def ana_sayfa():
 
     sayfa_musteri_idleri = [r[0] for r in c.fetchall()]
 
-    # ADIM 2: Sadece bu müşterilerin TÜM araçlarını çek (limit yok, hepsi gelsin)
     gruplu_musteriler = {}
     if sayfa_musteri_idleri:
         yer_tutucular = ','.join(['?'] * len(sayfa_musteri_idleri))
@@ -614,8 +612,6 @@ def islem_duzenle(id):
         except (ValueError, TypeError):
             hatalar.append("Lütfen kilometre alanına sadece sayısal bir değer giriniz.")
 
-        
-
         if hatalar:
             for hata in hatalar:
                 flash(hata, "danger")
@@ -759,25 +755,19 @@ def musteri_export():
 
         worksheet = writer.sheets['Müşteriler']
         
-        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
         for i, kolon in enumerate(df.columns, start=1): 
             
             baslik_uzunlugu = len(str(kolon))
             
-            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
-            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
             if not df[kolon].dropna().empty:
                 icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
             else:
                 icerik_uzunlugu = 0
                 
-            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
             optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
             
-            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
             sutun_harfi = get_column_letter(i)
             
-            # Genişliği uygula
             worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
 
     output.seek(0) #imleci başa sarar
@@ -817,36 +807,33 @@ def islem_export(arac_id):
     df = pd.read_sql_query(sorgu, conn, params=(arac_id,))
     conn.close()
 
+    if df.empty:
+        flash("Bu araç için işlem geçmişi bulunamadı.", "warning")
+        return redirect(request.referrer or '/')
+
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='İşlem Geçmişi')
 
-        output = io.BytesIO() # RAM'de geçici buffer
-    
+    output = io.BytesIO() 
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Müşteriler')
 
         worksheet = writer.sheets['İşlem Geçmişi']
         
-        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
         for i, kolon in enumerate(df.columns, start=1): 
             
             baslik_uzunlugu = len(str(kolon))
             
-            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
-            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
             if not df[kolon].dropna().empty:
                 icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
             else:
                 icerik_uzunlugu = 0
                 
-            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
             optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
             
-            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
             sutun_harfi = get_column_letter(i)
             
-            # Genişliği uygula
             worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
 
     output.seek(0)
@@ -951,6 +938,7 @@ def uyari_gonder(arac_id):
         flash(f"Mail gönderilirken bir hata oluştu. Hata: {sonuc_mesaji}", "danger")
     
     return redirect('/')
+
 @app.errorhandler(404)
 def sayfa_bulunamadi(e):
     return render_template('hata.html', kod=404, mesaj="Aradığınız sayfa bulunamadı."), 404

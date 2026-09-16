@@ -185,11 +185,19 @@
                                     <strong>Plaka:</strong> <span class="badge text-bg-secondary">{{ arac.plaka }}</span>
                                 </p>
 
-                        {% if arac.durum == 'kritik' %}
-                            <span class="badge bg-danger mb-2">🔴 Lastik Değişimi Kritik ({{ arac.kalan_km }} KM kaldı)</span><br>
-                        {% elif arac.durum == 'yaklasiyor' %}
-                            <span class="badge bg-warning text-dark mb-2">🟠 Yaklaşıyor ({{ arac.kalan_km }} KM kaldı)</span><br>
-                        {% endif %}
+                        <div class="mt-2 mb-3">
+                            {% if arac.durum == 'kritik' %}
+                                <span class="badge bg-danger me-2">Kritik ({% if arac.sebep == 'zaman' %}Zaman{% else %}KM{% endif %})</span>
+                            {% elif arac.durum == 'yaklasiyor' %}
+                                <span class="badge bg-warning text-dark me-2">Yaklaşıyor ({% if arac.sebep == 'zaman' %}Zaman{% else %}KM{% endif %})</span>
+                            {% endif %}
+
+                            {% if arac.kalan_km != None %}
+                                {% if arac.sebep != 'zaman' or arac.durum == 'normal' %}
+                                    <span style="font-size: 0.95em;"><b>Tahmini Kalan:</b> {{ arac.kalan_km | int }} KM</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>    
 
                         {% if arac.tahmini_km %}
                                     <button onclick="aiTahminGoster(event, '{{ arac.tahmini_km }}')" class="btn btn-outline-info btn-sm w-100 mb-2 fw-bold shadow-sm">
@@ -263,7 +271,6 @@
 
         <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
             <a class="page-link" href="/?page={{ current_page + 1 }}{% if arama_kelimesi %}&arama_kelimesi={{ arama_kelimesi }}{% endif %}{% if sirala %}&sirala={{ sirala }}{% endif %}#liste">Sonraki ➡️</a>
-    
         </li>
     </ul>
 </nav>
