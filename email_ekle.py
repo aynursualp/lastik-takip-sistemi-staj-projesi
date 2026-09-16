@@ -9,7 +9,6 @@ c = conn.cursor()
 
 try:
     c.execute("ALTER TABLE Musteriler ADD COLUMN email TEXT")
-    print("✅ MÜJDE! Email sütunu asıl veritabanına başarıyla eklendi!")
 except Exception as e:
     print(f"Hata oluştu: {e}")
 
