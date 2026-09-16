@@ -2,6 +2,7 @@ lastik_tipi_kodlari = {
         'YAZ': 0,
         'KIS': 1,
         '4 MEVSIM': 2, 
+        'DIGER': 3
     }
 
 def lastik_tipi_kodla(deger):
@@ -18,5 +19,5 @@ def lastik_tipi_kodla(deger):
         elif normalize in ('4 MEVSIM', '4MEVSIM', 'DORT MEVSIM'):
             return lastik_tipi_kodlari['4 MEVSIM']
         else:
-            return None
+            return lastik_tipi_kodlari['DIGER']
         
