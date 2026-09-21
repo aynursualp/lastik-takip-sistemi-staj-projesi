@@ -15,19 +15,49 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold">Araç Seçin</label>
-                        <select name="arac_id" class="form-control" required>
-                            <option value="">-- Lütfen bir araç seçin --</option>
+                        
+                        <input class="form-control" list="arac-datalist" id="arac-secici" placeholder="-- Plaka veya Araç Yazın --" required autocomplete="off">
+
+                        <input type="hidden" name="arac_id" id="gercek-arac-id" value="{{ islem[1] }}">
+
+                        <datalist id="arac-datalist">
                             {% for arac in arac_listesi %}
-                                <option value="{{ arac[0] }}" {% if arac[0] == islem[1] %}selected{% endif %}>
-                                    {{ arac[3] }} - {{ arac[1] }} {{ arac[2] }}
-                                </option>
+                                <option data-value="{{ arac[0] }}" value="{{ arac[3] }} - {{ arac[1] }} {{ arac[2] }}"></option>
                             {% endfor %}
-                        </select> 
+                        </datalist>
 
                         <div class="text-end mt-1">
                             <a href="/yeni-arac" class="text-decoration-none small text-warning">+ Yeni Araç Ekle</a>
                         </div>
                     </div>
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            var gercekIdInput = document.getElementById('gercek-arac-id');
+                            var seciciInput = document.getElementById('arac-secici');
+                            var secenekler = document.getElementById('arac-datalist').options;
+
+                            if (gercekIdInput.value) {
+                                for (var i = 0; i < secenekler.length; i++) {
+                                    if (secenekler[i].getAttribute('data-value') == gercekIdInput.value) {
+                                        seciciInput.value = secenekler[i].value;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            seciciInput.addEventListener('input', function(e) {
+                                var secilenDeger = this.value;
+                                for (var i = 0; i < secenekelr.length; i++) {
+                                    if (secenekler[i].value === secilenDeger) {
+                                        gercekIdInput.value = secenekler[i].getAttribute('data-value');
+                                        return;
+                                    }
+                                }
+                                gercekIdInput.value = '';
+                            });
+                        });
+                    </script>
 
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold">İşlem Tarihi</label>
@@ -41,12 +71,7 @@
 
                     <div class="mb-4">
                         <label class="form-label text-muted fw-bold">Lastik Tipi</label>
-                        <select name="lastik_tipi" class="form-control" required>
-                            <option value="">-- Lütfen bir tip seçin --</option>
-                            <option value="YAZ" {% if islem[4] == 'YAZ' %}selected{% endif %}>☀️ Yaz</option>
-                            <option value="KIS" {% if islem[4] == 'KIS' %}selected{% endif %}>❄️ Kış</option>
-                            <option value="4 MEVSIM" {% if islem[4] == '4 MEVSIM' %}selected{% endif %}>🍂 4 Mevsim</option>"
-                        </select>
+                        <input type="text" name="lastik_tipi" class="form-control" value="{{ islem[4] }}" placeholder="Örn: Yaz, Kış, Performans..." required autocomplete="off">
                     </div>
 
 
