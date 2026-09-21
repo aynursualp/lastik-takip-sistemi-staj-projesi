@@ -37,8 +37,6 @@
         </div>
     </div>
 
-    
-
     <div id="grafikler" class="row mb-5">
         {% if lastik_oranlari %}
             <div class="col-lg-4 mb-4">
@@ -121,7 +119,16 @@
                                             {% endif %}
                                             </td>
                                             <td>
-                                                <a href="/uyari-gonder/{{ kayit[6] }}" class="btn btn-sm btn-primary shadow-sm fw-bold">✉️ Mail Gönder</a>
+                                               <!-- <a href="/uyari-gonder/{{ kayit[6] }}" class="btn btn-sm btn-primary shadow-sm fw-bold">✉️ Mail Gönder</a> -->
+                                                {% if kayit [9] == 'kritik' %}
+                                                    <a href="/sms-gonder/{{ kayit[6] }}/kritik/{{ kayit[10] }}" class="btn btn-sm btn-danger fw-bold">
+                                                        🚨 Acil SMS Gönder
+                                                    </a>
+                                                {% elif kayit[9] == 'yaklasiyor' %}
+                                                    <a href="/sms-gonder/{{ kayit[6] }}/yaklasiyor/{{ kayit[10] }}" class="btn btn-sm btn-warning text-dark fw-bold">
+                                                        📱 Uyarı SMS Gönder
+                                                    </a>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                     {% endfor %}

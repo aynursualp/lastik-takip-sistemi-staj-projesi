@@ -16,6 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from email_servisi import musteriye_uyari_maili_gonder
+from sms_servisi import sms_gonder
 
 
 app = Flask(__name__)
@@ -817,7 +818,7 @@ def islem_export(arac_id):
 
     output = io.BytesIO() 
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Müşteriler')
+        df.to_excel(writer, index=False, sheet_name='İşlem Geçmişi')
 
         worksheet = writer.sheets['İşlem Geçmişi']
         
@@ -946,6 +947,32 @@ def sayfa_bulunamadi(e):
 @app.errorhandler(500)
 def sunucu_hatasi(e):
     return render_template('hata.html', kod=500, mesaj="Sunucuda beklenmeyen bir hata oluştu."), 500
+
+@app.route('/sms-gonder/<int:arac_id>/<durum>/<sebep>')
+def manuel_sms_gonder(arac_id, durum, sebep):
+    test_telefon = "+905343937378"
+    if sebep == 'zaman':
+        if durum == 'kritik':
+            mesaj = "aracınızın lastik değişim zamanı geçmiştir. KM sınırını doldurmasanız bile sürüş güvenliğiniz için randevu alınız."
+        else:
+            mesaj = "periyodik lastik değişim zamanınız yaklaşmaktadır. Şimdiden planlama yapmanızı öneririz."
+
+    else:
+        if durum == 'kritik':
+            mesaj = "Yapay zeka analizimize göre aracınızın lastik değişim kilometresi kritik seviyededir. Lütfen servis randevusu alınız."
+        else:
+            mesaj = "Sent from your Twilio trial account - Test message 1234"
+
+    basarili_mi = sms_gonder(test_telefon, mesaj)
+
+    if basarili_mi:
+        flash(f"Müşteriye SMS başarıyla gönderildi!", "success")
+    else:
+        flash("SMS gönderilirken bir hata oluştu.", "danger")
+
+    return redirect(request.referrer or '/')
+
+        
                         
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
