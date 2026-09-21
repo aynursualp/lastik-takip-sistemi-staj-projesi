@@ -19,7 +19,7 @@ islem_tablosu = veriler_getir()
 
 islem_tablosu['lastik_tipi'] = islem_tablosu['lastik_tipi'].apply(lastik_tipi_kodla)
 
-kodlanamayan_sayisi = islem_tablosu['lastik_tipi'.isna().sum()]
+kodlanamayan_sayisi = islem_tablosu['lastik_tipi'].isna().sum()
 if kodlanamayan_sayisi > 0:
     print(f"UYARI: {kodlanamayan_sayisi} kayıt tanınmayan lastik tipi içerdiği için eğitimden çıkarıldı.")
 islem_tablosu = islem_tablosu.dropna(subset=['lastik_tipi'])

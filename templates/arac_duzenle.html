@@ -15,23 +15,39 @@
                 <form action="/arac-duzenle/{{ arac[0] }}" method="POST">
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold">Müşteri Seçin</label>
-                        <select name="musteri_id" class="form-control" required>
-                            <option value="">-- Lütfen bir müşteri seçin --</option>
+                        
+                        <input class="form-control" list="musteri-datalist" id="musteri-secici" placeholder="-- Müşteri Adı Yazın --" required autocomplete="off">
+
+                        <input type="hidden" name="musteri_id" id="gercek-musteri-id" value="{{ arac[4] }}">
+
+                        <datalist id="musteri-datalist">
                             {% for musteri in musteri_listesi %}
-                                <option value="{{ musteri[0] }}" {% if musteri[0] == arac[4] %}selected{% endif %}>
-                                    {{ musteri[1] }} {{ musteri[2] }}
-                                </option>
+                                <option data-value="{{ musteri[0] }}" value="{{ musteri[1] }} {{ musteri[2] }}"></option>
                             {% endfor %}
-                        </select>
+                        </datalist>
 
                         <div class="text-end mt-1">
                             <a href="/yeni-musteri" class="text-decoration-none small text-success">+ Yeni  Müşteri Ekle</a>
                         </div>
                     </div>
 
-                    
-                    
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            var gercekIdInput = document.getElementById('gercek-musteri-id');
+                            var seciciInput = document.getElementById('musteri-secici');
+                            var secenekler = document.getElementById('musteri-datalist').options;
 
+                            if (gercekIdInput.value) {
+                                for (var i = 0; i < secenekler.length; i++) {
+                                    if (secenekler[i].getAttribute('data-value') == gercekIdInput.value) {
+                                        seciciInput.value = secenekler[i].value;
+                                        break;
+                                    }
+                                }
+                            }
+                        })
+                    </script>
+                    
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold">Marka</label>
                         <input type="text" name="marka" class="form-control" value="{{ arac[1] }}" required>

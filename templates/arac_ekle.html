@@ -15,12 +15,31 @@
                 <form action="/yeni-arac" method="POST">
                     <div class="mb-3">
                         <label class="form-label text-muted fw-bold">Müşteri Seçin</label>
-                        <select name="musteri_id" class="form-control" required>
-                            <option value="">-- Lütfen bir müşteri seçin --</option>
+                        
+                        <input class="form-control" list="musteri-datalist" id="musteri-secici" placeholder="-- Müşteri Adı Yazın --" required autocomplete="off">
+
+                        <input type="hidden" name="musteri_id" id="gercek-musteri-id">
+
+                        <datalist id="musteri-datalist">
                             {% for musteri in musteri_listesi %}
-                                <option value="{{ musteri[0] }}">{{ musteri[1]}} {{ musteri[2] }}</option>
+                                <option data-value="{{ musteri[0] }}" value="{{ musteri[1] }} {{ musteri[2] }}"></option>
                             {% endfor %}
-                        </select>
+                        </datalist>
+
+                        <script>
+                            document.getElementById('musteri-secici').addEventListener('input', function(e) {
+                                var secilenDeger = this.value;
+                                var secenekler = document.getElementById('musteri-datalist').options;
+
+                                for (var i = 0; i < secenekler.length; i++) {
+                                    if (secenekler[i].value === secilenDeger) {
+                                        document.getElementById('gercek-musteri-id').value = secenekler[i].getAttribute('data-value');
+                                        return;
+                                    }
+                                }
+                                document.getElementById('gercek-musteri-id').value = '';
+                            });
+                        </script>
 
                         <div class="text-end mt-1">
                             <a href="/yeni-musteri" class="text-decoration-none small text-success">+ Yeni Müşteri Ekle</a>

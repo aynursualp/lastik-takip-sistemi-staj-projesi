@@ -16,6 +16,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from email_servisi import musteriye_uyari_maili_gonder
+from sms_servisi import sms_gonder
 
 
 app = Flask(__name__)
@@ -62,7 +63,7 @@ def arac_durumu_hesapla(c, arac_id, model):
         gun_farklari = [(tum_tarihler[i+1] - tum_tarihler[i]).days for i in range(len(tum_tarihler) - 1)]
         ortalama_gun_araligi = sum(gun_farklari) / len(gun_farklari)
 
-    zaman_gecikmis = False
+    zaman_gecikmis = False 
     zaman_yaklasiyor = False
     if ortalama_gun_araligi:
         if gun_farki >= ortalama_gun_araligi:
@@ -100,8 +101,8 @@ def ana_sayfa():
     siralama_haritasi = {
         'eski': 'Musteriler.musteri_id ASC',
         'yeni': 'Musteriler.musteri_id DESC',
-        'ad_az': 'Musteriler.ad ASC',
-        'ad_za': 'Musteriler.ad DESC'
+        'ad_az': 'Musteriler.ad COLLATE NOCASE ASC',
+        'ad_za': 'Musteriler.ad COLLATE NOCASE DESC'
     }
 
     siralama_sql = siralama_haritasi.get(sirala, 'Musteriler.musteri_id ASC')
@@ -166,7 +167,6 @@ def ana_sayfa():
                   LIMIT ? OFFSET ?''', (sayfa_basina_kayit, offset_degeri)
                   )
 
-    # ADIM 1: Bu sayfada hangi müşteriler olacak, önce SADECE müşteri ID'lerini belirle
     if gelen_arama:
         aranan_sart = f"%{gelen_arama}%"
         c.execute(f'''
@@ -186,7 +186,6 @@ def ana_sayfa():
 
     sayfa_musteri_idleri = [r[0] for r in c.fetchall()]
 
-    # ADIM 2: Sadece bu müşterilerin TÜM araçlarını çek (limit yok, hepsi gelsin)
     gruplu_musteriler = {}
     if sayfa_musteri_idleri:
         yer_tutucular = ','.join(['?'] * len(sayfa_musteri_idleri))
@@ -374,6 +373,8 @@ def yeni_arac():
         c.execute('''INSERT INTO Araclar (marka, model, plaka, musteri_id) VALUES(?, ?, ?, ?)''', (gelen_marka, gelen_model, gelen_plaka, gelen_musteri_id))
         conn.commit()
         conn.close()
+
+        flash("Yeni araç başarıyla sisteme eklendi!", "success")
         return redirect('/')
     
     conn = sqlite3.connect('database.db')
@@ -411,6 +412,17 @@ def yeni_islem():
             if km_sayi < 0:
                 flash("Hata: Kilometre eksi bir değer olamaz!", "danger")
                 return redirect(request.referrer or '/') 
+
+            conn_kontrol = sqlite3.connect('database.db')
+            c_kontrol = conn_kontrol.cursor()
+            c_kontrol.execute("SELECT MAX(kilometre) FROM Islemler WHERE arac_id = ?", (arac_id,))
+            max_km = c_kontrol.fetchone()[0]
+            conn_kontrol.close()
+
+            if max_km is not None and km_sayi <= max_km:
+                flash(f"Hata: Girilen kilometre ({km_sayi}), sistemdeki son işlem kilometresinden ({max_km}) küçük veya ona eşit olamaz!", "danger")
+                return redirect(request.referrer or '/')
+            
         except ValueError:
             flash("Hata: Lütfen kilometre alanına sadece sayısal bir değer giriniz!", "danger")
             return redirect(request.referrer or '/')
@@ -425,6 +437,8 @@ def yeni_islem():
         c.execute('''INSERT INTO Islemler (arac_id, islem_tarihi, kilometre, lastik_tipi) VALUES (?, ?, ?, ?)''', (arac_id, islem_tarihi, km, lastik_tipi)) 
         conn.commit()
         conn.close()
+
+        flash("Yeni işlem kaydı başarıyla eklendi!", "success")
         return redirect('/')
 
     gelen_secili_arac = request.args.get('secili_arac')
@@ -448,6 +462,8 @@ def islem_sil(silinecek_id):
 
     conn.commit()
     conn.close()
+
+    flash("İşlem geçmişi başarıyla silindi.", "success")
     return redirect('/')
 
 @app.route('/musteri-sil/<silinecek_id>')
@@ -481,6 +497,7 @@ def arac_sil(silinecek_id):
     conn.commit()
     conn.close()
 
+    flash("Araç sistemden başarıyla silindi.", "success")
     return redirect('/')
 
 @app.route('/musteri-duzenle/<id>', methods=['GET', 'POST'])
@@ -568,6 +585,8 @@ def arac_duzenle(id):
                   WHERE arac_id = ?''', (yeni_musteri_id, yeni_marka, yeni_model, yeni_plaka, id))
         conn.commit()
         conn.close()
+
+        flash("Araç bilgileri güncellendi.", "success")
         return redirect('/')
     else:
         conn = sqlite3.connect('database.db')
@@ -614,8 +633,6 @@ def islem_duzenle(id):
         except (ValueError, TypeError):
             hatalar.append("Lütfen kilometre alanına sadece sayısal bir değer giriniz.")
 
-        
-
         if hatalar:
             for hata in hatalar:
                 flash(hata, "danger")
@@ -629,6 +646,8 @@ def islem_duzenle(id):
                   WHERE islem_id = ?''', (yeni_arac_id, yeni_islem_tarihi, yeni_km, yeni_lastik_tipi, id))
         conn.commit()
         conn.close()
+
+        flash("İşlem kaydı başarıyla güncellendi.", "success")
         return redirect('/')
     else:
         conn = sqlite3.connect('database.db')
@@ -641,6 +660,7 @@ def islem_duzenle(id):
 
         conn.commit()
         conn.close()
+        
         return render_template('islem_duzenle.html', islem=secilen_islem, arac_listesi=arac_listesi)
     
 @app.route('/islem-gecmisi/<id>')
@@ -759,25 +779,19 @@ def musteri_export():
 
         worksheet = writer.sheets['Müşteriler']
         
-        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
         for i, kolon in enumerate(df.columns, start=1): 
             
             baslik_uzunlugu = len(str(kolon))
             
-            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
-            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
             if not df[kolon].dropna().empty:
                 icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
             else:
                 icerik_uzunlugu = 0
                 
-            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
             optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
             
-            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
             sutun_harfi = get_column_letter(i)
             
-            # Genişliği uygula
             worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
 
     output.seek(0) #imleci başa sarar
@@ -817,36 +831,33 @@ def islem_export(arac_id):
     df = pd.read_sql_query(sorgu, conn, params=(arac_id,))
     conn.close()
 
+    if df.empty:
+        flash("Bu araç için işlem geçmişi bulunamadı.", "warning")
+        return redirect(request.referrer or '/')
+
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='İşlem Geçmişi')
 
-        output = io.BytesIO() # RAM'de geçici buffer
-    
+    output = io.BytesIO() 
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Müşteriler')
+        df.to_excel(writer, index=False, sheet_name='İşlem Geçmişi')
 
         worksheet = writer.sheets['İşlem Geçmişi']
         
-        # Enumerate'i 1'den başlatıyoruz çünkü Excel sütunları 1'den (A) başlar
         for i, kolon in enumerate(df.columns, start=1): 
             
             baslik_uzunlugu = len(str(kolon))
             
-            # İçerik uzunluğunu vektörel ve güvenli şekilde hesapla
-            # dropna() ile Null (NaN) değerleri işlemden çıkarıyoruz ki max() çökmesin
             if not df[kolon].dropna().empty:
                 icerik_uzunlugu = df[kolon].dropna().astype(str).str.len().max()
             else:
                 icerik_uzunlugu = 0
                 
-            # Başlık mı yoksa içerik mi daha uzun? (+4 karakter boşluk payı padding)
             optimum_genislik = max(baslik_uzunlugu, int(icerik_uzunlugu)) + 4
             
-            # Sütun harfini doğrudan openpyxl utils ile al (A, B, C... AA, AB)
             sutun_harfi = get_column_letter(i)
             
-            # Genişliği uygula
             worksheet.column_dimensions[sutun_harfi].width = optimum_genislik
 
     output.seek(0)
@@ -951,6 +962,7 @@ def uyari_gonder(arac_id):
         flash(f"Mail gönderilirken bir hata oluştu. Hata: {sonuc_mesaji}", "danger")
     
     return redirect('/')
+
 @app.errorhandler(404)
 def sayfa_bulunamadi(e):
     return render_template('hata.html', kod=404, mesaj="Aradığınız sayfa bulunamadı."), 404
@@ -958,6 +970,32 @@ def sayfa_bulunamadi(e):
 @app.errorhandler(500)
 def sunucu_hatasi(e):
     return render_template('hata.html', kod=500, mesaj="Sunucuda beklenmeyen bir hata oluştu."), 500
+
+@app.route('/sms-gonder/<int:arac_id>/<durum>/<sebep>')
+def manuel_sms_gonder(arac_id, durum, sebep):
+    test_telefon = "+905343937378"
+    if sebep == 'zaman':
+        if durum == 'kritik':
+            mesaj = "aracınızın lastik değişim zamanı geçmiştir. KM sınırını doldurmasanız bile sürüş güvenliğiniz için randevu alınız."
+        else:
+            mesaj = "periyodik lastik değişim zamanınız yaklaşmaktadır. Şimdiden planlama yapmanızı öneririz."
+
+    else:
+        if durum == 'kritik':
+            mesaj = "Yapay zeka analizimize göre aracınızın lastik değişim kilometresi kritik seviyededir. Lütfen servis randevusu alınız."
+        else:
+            mesaj = "Sent from your Twilio trial account - Test message 1234"
+
+    basarili_mi = sms_gonder(test_telefon, mesaj)
+
+    if basarili_mi:
+        flash(f"Müşteriye SMS başarıyla gönderildi!", "success")
+    else:
+        flash("SMS gönderilirken bir hata oluştu.", "danger")
+
+    return redirect(request.referrer or '/')
+
+        
                         
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)
