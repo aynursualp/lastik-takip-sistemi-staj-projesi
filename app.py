@@ -101,8 +101,8 @@ def ana_sayfa():
     siralama_haritasi = {
         'eski': 'Musteriler.musteri_id ASC',
         'yeni': 'Musteriler.musteri_id DESC',
-        'ad_az': 'Musteriler.ad ASC',
-        'ad_za': 'Musteriler.ad DESC'
+        'ad_az': 'Musteriler.ad COLLATE NOCASE ASC',
+        'ad_za': 'Musteriler.ad COLLATE NOCASE DESC'
     }
 
     siralama_sql = siralama_haritasi.get(sirala, 'Musteriler.musteri_id ASC')
@@ -373,6 +373,8 @@ def yeni_arac():
         c.execute('''INSERT INTO Araclar (marka, model, plaka, musteri_id) VALUES(?, ?, ?, ?)''', (gelen_marka, gelen_model, gelen_plaka, gelen_musteri_id))
         conn.commit()
         conn.close()
+
+        flash("Yeni araç başarıyla sisteme eklendi!", "success")
         return redirect('/')
     
     conn = sqlite3.connect('database.db')
@@ -410,6 +412,17 @@ def yeni_islem():
             if km_sayi < 0:
                 flash("Hata: Kilometre eksi bir değer olamaz!", "danger")
                 return redirect(request.referrer or '/') 
+
+            conn_kontrol = sqlite3.connect('database.db')
+            c_kontrol = conn_kontrol.cursor()
+            c_kontrol.execute("SELECT MAX(kilometre) FROM Islemler WHERE arac_id = ?", (arac_id,))
+            max_km = c_kontrol.fetchone()[0]
+            conn_kontrol.close()
+
+            if max_km is not None and km_sayi <= max_km:
+                flash(f"Hata: Girilen kilometre ({km_sayi}), sistemdeki son işlem kilometresinden ({max_km}) küçük veya ona eşit olamaz!", "danger")
+                return redirect(request.referrer or '/')
+            
         except ValueError:
             flash("Hata: Lütfen kilometre alanına sadece sayısal bir değer giriniz!", "danger")
             return redirect(request.referrer or '/')
@@ -424,6 +437,8 @@ def yeni_islem():
         c.execute('''INSERT INTO Islemler (arac_id, islem_tarihi, kilometre, lastik_tipi) VALUES (?, ?, ?, ?)''', (arac_id, islem_tarihi, km, lastik_tipi)) 
         conn.commit()
         conn.close()
+
+        flash("Yeni işlem kaydı başarıyla eklendi!", "success")
         return redirect('/')
 
     gelen_secili_arac = request.args.get('secili_arac')
@@ -447,6 +462,8 @@ def islem_sil(silinecek_id):
 
     conn.commit()
     conn.close()
+
+    flash("İşlem geçmişi başarıyla silindi.", "success")
     return redirect('/')
 
 @app.route('/musteri-sil/<silinecek_id>')
@@ -480,6 +497,7 @@ def arac_sil(silinecek_id):
     conn.commit()
     conn.close()
 
+    flash("Araç sistemden başarıyla silindi.", "success")
     return redirect('/')
 
 @app.route('/musteri-duzenle/<id>', methods=['GET', 'POST'])
@@ -567,6 +585,8 @@ def arac_duzenle(id):
                   WHERE arac_id = ?''', (yeni_musteri_id, yeni_marka, yeni_model, yeni_plaka, id))
         conn.commit()
         conn.close()
+
+        flash("Araç bilgileri güncellendi.", "success")
         return redirect('/')
     else:
         conn = sqlite3.connect('database.db')
@@ -626,6 +646,8 @@ def islem_duzenle(id):
                   WHERE islem_id = ?''', (yeni_arac_id, yeni_islem_tarihi, yeni_km, yeni_lastik_tipi, id))
         conn.commit()
         conn.close()
+
+        flash("İşlem kaydı başarıyla güncellendi.", "success")
         return redirect('/')
     else:
         conn = sqlite3.connect('database.db')
@@ -638,6 +660,7 @@ def islem_duzenle(id):
 
         conn.commit()
         conn.close()
+        
         return render_template('islem_duzenle.html', islem=secilen_islem, arac_listesi=arac_listesi)
     
 @app.route('/islem-gecmisi/<id>')
