@@ -1,4 +1,4 @@
-# 🚗 Lastik Takip ve Yapay Zeka Destekli Bakım Tahmin Sistemi
+# 🚗 Lastik Takip Sistemi
 
 Bu proje, otomotiv servisleri ve lastik otelleri için geliştirilmiş, **Yapay Zeka (Random Forest Regressor)** destekli bir müşteri, araç ve işlem yönetim sistemidir. Sistem, müşterilerin geçmiş lastik değişim alışkanlıklarını analiz ederek bir sonraki değişimin ne zaman ve kaç kilometrede yapılacağını öngörür ve SMTP üzerinden proaktif E-posta bildirimleri (Uyarı/Kritik) gönderir.
 
