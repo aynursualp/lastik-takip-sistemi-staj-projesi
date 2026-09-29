@@ -17,11 +17,11 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from email_servisi import musteriye_uyari_maili_gonder
 from sms_servisi import sms_gonder
-
+import os
 
 app = Flask(__name__)
 
-app.secret_key = "gizli_anahtar"
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'yedek_gizli_anahtar')
 
 model = joblib.load('lastik_tahmin_modeli.joblib')
 
@@ -973,7 +973,7 @@ def sunucu_hatasi(e):
 
 @app.route('/sms-gonder/<int:arac_id>/<durum>/<sebep>')
 def manuel_sms_gonder(arac_id, durum, sebep):
-    test_telefon = "+905343937378"
+    test_telefon = os.getenv('TEST_TELEFON_NO')
     if sebep == 'zaman':
         if durum == 'kritik':
             mesaj = "aracınızın lastik değişim zamanı geçmiştir. KM sınırını doldurmasanız bile sürüş güvenliğiniz için randevu alınız."
@@ -995,7 +995,6 @@ def manuel_sms_gonder(arac_id, durum, sebep):
 
     return redirect(request.referrer or '/')
 
-        
-                        
+
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

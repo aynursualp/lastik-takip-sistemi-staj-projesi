@@ -7,9 +7,9 @@ import os
 load_dotenv()
 
 TEST_MODU = True
-BENIM_TEST_MAILIM = "aynur.sualp0907@gmail.com"
+BENIM_TEST_MAILIM = os.getenv('TEST_MAIL_ADRESI')
 
-GONDERICI_MAIL = "aynur.sualp0907@gmail.com"
+GONDERICI_MAIL_ADRESI = os.getenv('GONDERICI_MAIL_ADRESI')  
 UYGULAMA_SIFRESI = os.environ.get('GMAIL_UYGULAMA_SIFRESI', '')
 
 def musteriye_uyari_maili_gonder(musteri_ad, arac_plaka, kalan_km, musteri_gercek_email, sebep, durum):
@@ -56,7 +56,7 @@ def musteriye_uyari_maili_gonder(musteri_ad, arac_plaka, kalan_km, musteri_gerce
 """
     
     msg = MIMEMultipart()
-    msg['From'] = GONDERICI_MAIL
+    msg['From'] = GONDERICI_MAIL_ADRESI
     msg['To'] = gidecek_adres
     msg['Subject'] = baslik_metni
     msg.attach(MIMEText(mesaj_icerigi, 'html', 'utf-8'))
@@ -64,7 +64,7 @@ def musteriye_uyari_maili_gonder(musteri_ad, arac_plaka, kalan_km, musteri_gerce
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
-        server.login(GONDERICI_MAIL, UYGULAMA_SIFRESI)
+        server.login(GONDERICI_MAIL_ADRESI, UYGULAMA_SIFRESI)
         server.send_message(msg)
         server.quit()
         return True, gidecek_adres
