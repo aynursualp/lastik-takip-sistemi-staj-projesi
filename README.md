@@ -20,9 +20,10 @@ Bu proje, otomotiv servisleri ve lastik otelleri için geliştirilmiş, **Yapay 
 
 ## ⚙️ Kurulum ve Çalıştırma
 
-1. Projeyi bilgisayarınıza klonlayın:
-`git clone https://github.com/KULLANICI_ADINIZ/lastik-takip-sistemi.git`
-`cd lastik-takip-sistemi`
+1. Projeyi bilgisayarınıza klonlayın ve proje dizinine gidin:
+   ```bash
+   git clone [https://github.com/kullaniciadiniz/lastik-takip-sistemi-staj-projesi.git](https://github.com/kullaniciadiniz/lastik-takip-sistemi-staj-projesi.git)
+   cd lastik-takip-sistemi-staj-projesi
 
 2. Gerekli kütüphaneleri yükleyin:
 `pip install flask pandas scikit-learn joblib openpyxl python-dotenv`
