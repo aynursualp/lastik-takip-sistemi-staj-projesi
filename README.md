@@ -22,7 +22,7 @@ Bu proje, otomotiv servisleri ve lastik otelleri için geliştirilmiş, **Yapay 
 
 1. Projeyi bilgisayarınıza klonlayın ve proje dizinine gidin:
    ```bash
-   git clone [https://github.com/kullaniciadiniz/lastik-takip-sistemi-staj-projesi.git](https://github.com/kullaniciadiniz/lastik-takip-sistemi-staj-projesi.git)
+   git clone [https://github.com/kullaniciadiniz/lastik-takip-sistemi-staj-projesi.git](https://github.com/aynursualp/lastik-takip-sistemi-staj-projesi.git)
    cd lastik-takip-sistemi-staj-projesi
 
 2. Gerekli kütüphaneleri yükleyin:
